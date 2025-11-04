@@ -8,15 +8,15 @@ import { Loading } from "./Loading";
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const token = useAuthStore((state) => state.token);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   useEffect(() => {
-    if (!isAuthenticated && !token) {
+    if (!isAuthenticated && !accessToken) {
       router.push("/auth/login");
     }
-  }, [isAuthenticated, token, router]);
+  }, [isAuthenticated, accessToken, router]);
 
-  if (!isAuthenticated && !token) {
+  if (!isAuthenticated && !accessToken) {
     return <Loading />;
   }
 

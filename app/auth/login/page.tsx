@@ -35,11 +35,15 @@ export default function LoginPage() {
 
       // Remove password from user object
       const { password: _, ...userWithoutPassword } = user;
-      const mockToken = "mock-jwt-token-" + user.id;
+      const mockAccessToken = "mock-access-token-" + user.id;
+      const mockRefreshToken = "mock-refresh-token-" + user.id;
 
       // Save to auth store
-      login({ user: userWithoutPassword, token: mockToken });
-      localStorage.setItem("token", mockToken);
+      login({
+        user: userWithoutPassword,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken
+      });
 
       // Redirect to dashboard
       router.push("/dashboard");

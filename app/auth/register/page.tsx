@@ -38,11 +38,15 @@ export default function RegisterPage() {
         school: data.school,
         role: "student" as const,
       };
-      const mockToken = "mock-jwt-token-" + newUser.id;
+      const mockAccessToken = "mock-access-token-" + newUser.id;
+      const mockRefreshToken = "mock-refresh-token-" + newUser.id;
 
       // Save to auth store
-      login({ user: newUser, token: mockToken });
-      localStorage.setItem("token", mockToken);
+      login({
+        user: newUser,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken
+      });
 
       // Redirect to dashboard
       router.push("/dashboard");
