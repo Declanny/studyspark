@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { api } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,33 +26,32 @@ export default function RegisterPage() {
       setIsLoading(true);
       setError("");
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Create new user with mock data
-      const newUser = {
-        id: "user-" + Date.now(),
+      // Call real backend API
+      const response = await api.post("/auth/register", {
         email: data.email,
+        password: data.password,
         name: data.name,
         course: data.course,
         level: data.level,
-        school: data.school,
-        role: "student" as const,
-      };
-      const mockAccessToken = "mock-access-token-" + newUser.id;
-      const mockRefreshToken = "mock-refresh-token-" + newUser.id;
+        school: data.school || "",
+      });
+
+      const { user, accessToken, refreshToken } = response.data;
 
       // Save to auth store
       login({
-        user: newUser,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken
+        user,
+        accessToken,
+        refreshToken,
       });
 
       // Redirect to dashboard
       router.push("/dashboard");
-    } catch {
-      setError("Registration failed. Please try again.");
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error || "Registration failed. Please try again.";
+      setError(errorMessage);
       setIsLoading(false);
     }
   };

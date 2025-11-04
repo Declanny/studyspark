@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { MOCK_USERS } from "@/lib/mockData";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,36 +19,28 @@ export default function LoginPage() {
       setIsLoading(true);
       setError("");
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Call real backend API
+      const response = await api.post("/auth/login", {
+        email: data.email,
+        password: data.password,
+      });
 
-      // Mock authentication - find user in mock data
-      const user = MOCK_USERS.find(
-        (u) => u.email === data.email && u.password === data.password
-      );
-
-      if (!user) {
-        setError("Invalid email or password. Try: student@studyspark.com / password123");
-        setIsLoading(false);
-        return;
-      }
-
-      // Remove password from user object
-      const { password: _, ...userWithoutPassword } = user;
-      const mockAccessToken = "mock-access-token-" + user.id;
-      const mockRefreshToken = "mock-refresh-token-" + user.id;
+      const { user, accessToken, refreshToken } = response.data;
 
       // Save to auth store
       login({
-        user: userWithoutPassword,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken
+        user,
+        accessToken,
+        refreshToken,
       });
 
       // Redirect to dashboard
       router.push("/dashboard");
-    } catch {
-      setError("Login failed. Please try again.");
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error || "Login failed. Please try again.";
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
