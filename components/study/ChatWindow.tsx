@@ -6,13 +6,32 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
-import { Send, Sparkles, FileText, Lightbulb } from "lucide-react";
+import { Send, Sparkles, FileText, Lightbulb, BookOpen, X } from "lucide-react";
+import MaterialSelector from "@/components/materials/MaterialSelector";
+import ContextDisplay from "@/components/chat/ContextDisplay";
+import { chatWithContext } from "@/lib/materialApi";
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  context?: any;
+}
 
 export function ChatWindow() {
-  const { messages, selectedTopic, addMessage } = useStudyStore();
+  const { messages: storeMessages, selectedTopic, addMessage } = useStudyStore();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([]);
+  const [isMaterialSelectorOpen, setIsMaterialSelectorOpen] = useState(false);
+  const [useRAG, setUseRAG] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMessages(storeMessages as Message[]);
+  }, [storeMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,7 +44,7 @@ export function ChatWindow() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now().toString(),
       role: "user" as const,
       content: input.trim(),
@@ -37,24 +56,44 @@ export function ChatWindow() {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/study/query", {
-        topic: selectedTopic,
-        message: userMessage.content,
-      });
+      let aiResponse;
+      let context;
 
-      const aiMessage = {
+      if (useRAG && selectedMaterialIds.length > 0) {
+        // Use RAG endpoint with material context
+        const response = await chatWithContext({
+          message: userMessage.content,
+          materialIds: selectedMaterialIds,
+          topic: selectedTopic || undefined,
+        });
+
+        aiResponse = response.data.aiResponse;
+        context = response.data.chunksUsed;
+      } else {
+        // Use regular chat endpoint
+        const response = await api.post("/study/query", {
+          topic: selectedTopic,
+          message: userMessage.content,
+        });
+
+        aiResponse = response.data.response;
+      }
+
+      const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant" as const,
-        content: response.data.response,
+        content: aiResponse,
         timestamp: new Date(),
+        context,
       };
 
       addMessage(aiMessage);
-    } catch {
-      const errorMessage = {
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant" as const,
-        content: "Sorry, I encountered an error. Please try again.",
+        content: error.response?.data?.error || "Sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
       };
       addMessage(errorMessage);
@@ -75,37 +114,87 @@ export function ChatWindow() {
   };
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-16rem)]">
-      {/* Quick Actions */}
-      <div className="p-4 border-b flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleQuickAction("summarize")}
-          disabled={isLoading}
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          Summarize Topic
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleQuickAction("flashcards")}
-          disabled={isLoading}
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Generate Flashcards
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleQuickAction("explain")}
-          disabled={isLoading}
-        >
-          <Lightbulb className="w-4 h-4 mr-2" />
-          Explain Like I&apos;m 5
-        </Button>
-      </div>
+    <>
+      <MaterialSelector
+        selectedIds={selectedMaterialIds}
+        onSelectionChange={setSelectedMaterialIds}
+        isOpen={isMaterialSelectorOpen}
+        onClose={() => setIsMaterialSelectorOpen(false)}
+      />
+
+      <Card className="flex flex-col h-[calc(100vh-16rem)]">
+        {/* Material Context Controls */}
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useRAG}
+                  onChange={(e) => setUseRAG(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Use course materials
+                </span>
+              </label>
+              {useRAG && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsMaterialSelectorOpen(true)}
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  {selectedMaterialIds.length > 0
+                    ? `${selectedMaterialIds.length} selected`
+                    : 'Select Materials'}
+                </Button>
+              )}
+            </div>
+
+            {selectedMaterialIds.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedMaterialIds([])}
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickAction("summarize")}
+              disabled={isLoading}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Summarize Topic
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickAction("flashcards")}
+              disabled={isLoading}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate Flashcards
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickAction("explain")}
+              disabled={isLoading}
+            >
+              <Lightbulb className="w-4 h-4 mr-2" />
+              Explain Like I&apos;m 5
+            </Button>
+          </div>
+        </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -126,16 +215,25 @@ export function ChatWindow() {
               }`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                className={`max-w-[80%] ${
+                  message.role === "assistant" ? "w-full" : ""
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {new Date(message.timestamp).toLocaleTimeString()}
-                </p>
+                <div
+                  className={`rounded-2xl px-4 py-3 ${
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </p>
+                </div>
+                {message.role === "assistant" && message.context && (
+                  <ContextDisplay chunksUsed={message.context} />
+                )}
               </div>
             </div>
           ))
@@ -182,7 +280,8 @@ export function ChatWindow() {
         <p className="text-xs text-muted-foreground mt-2">
           Press Enter to send, Shift+Enter for new line
         </p>
-      </div>
-    </Card>
+        </div>
+      </Card>
+    </>
   );
 }
