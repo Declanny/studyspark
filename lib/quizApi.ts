@@ -60,10 +60,10 @@ export interface GenerateQuizRequest {
 }
 
 /**
- * Generate quiz questions using AI
+ * Generate quiz questions using AI (without saving to database)
  */
 export async function generateQuizQuestions(data: GenerateQuizRequest): Promise<Question[]> {
-  const response = await api.post('/quiz/generate', data);
+  const response = await api.post('/quiz/questions/generate', data);
   return response.data.questions;
 }
 
