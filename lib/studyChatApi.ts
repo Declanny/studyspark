@@ -1,5 +1,23 @@
 import { api } from './api';
 
+// Generic recommendation interface for videos, books, articles, etc.
+export interface Recommendation {
+  type: 'video' | 'reading';
+  title: string;
+  url: string;
+  description: string;
+  thumbnail: string;
+  source: string;
+  // Video-specific fields
+  duration?: string;
+  channelTitle?: string;
+  viewCount?: string;
+  publishedAt?: string;
+  // Reading-specific fields
+  authors?: string[];
+}
+
+// Legacy interface for backward compatibility
 export interface YouTubeVideo {
   id: string;
   title: string;
@@ -17,7 +35,7 @@ export interface StudyChatResponse {
   aiResponse: string;
   topic: string;
   course?: string;
-  youtubeRecommendations: YouTubeVideo[];
+  recommendations: Recommendation[];
   messageCount: number;
   createdAt: string;
 }
@@ -29,11 +47,20 @@ export interface CreateStudyChatRequest {
 }
 
 /**
- * Create a new study chat with AI response and YouTube recommendations
+ * Create a new study chat with AI response and recommendations (videos, books, etc.)
  */
 export async function createStudyChat(data: CreateStudyChatRequest): Promise<StudyChatResponse> {
   const response = await api.post('/study/chat', data);
-  return response.data.data;
+  const apiData = response.data.data;
+
+  return {
+    chatId: apiData.studyChat._id,
+    aiResponse: apiData.aiResponse,
+    topic: apiData.studyChat.topic,
+    recommendations: apiData.recommendations || [],
+    messageCount: apiData.studyChat.messageCount,
+    createdAt: apiData.studyChat.createdAt,
+  };
 }
 
 /**

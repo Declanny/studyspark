@@ -1,5 +1,6 @@
 import { api } from './api';
 import { TextChunk } from './fileExtractor';
+import { Recommendation } from './studyChatApi';
 
 export interface CourseMaterial {
   _id: string;
@@ -49,6 +50,7 @@ export interface ChatWithContextResponse {
       similarity: string;
       preview: string;
     }>;
+    recommendations?: Recommendation[];
     messageCount: number;
   };
 }

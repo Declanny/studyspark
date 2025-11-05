@@ -10,7 +10,7 @@ import { Send, Sparkles, FileText, Lightbulb, BookOpen, X, Play, Eye, Calendar, 
 import MaterialSelector from "@/components/materials/MaterialSelector";
 import ContextDisplay from "@/components/chat/ContextDisplay";
 import { chatWithContext } from "@/lib/materialApi";
-import { createStudyChat, YouTubeVideo, formatDuration, formatViewCount, formatPublishedDate } from "@/lib/studyChatApi";
+import { createStudyChat, Recommendation, formatDuration, formatViewCount, formatPublishedDate } from "@/lib/studyChatApi";
 
 interface Message {
   id: string;
@@ -18,7 +18,7 @@ interface Message {
   content: string;
   timestamp: Date;
   context?: any;
-  youtubeRecommendations?: YouTubeVideo[];
+  recommendations?: Recommendation[];
 }
 
 export function ChatWindow() {
@@ -60,7 +60,7 @@ export function ChatWindow() {
     try {
       let aiResponse;
       let context;
-      let youtubeRecommendations: YouTubeVideo[] | undefined;
+      let recommendations: Recommendation[] = [];
 
       if (useRAG && selectedMaterialIds.length > 0) {
         // Use RAG endpoint with material context
@@ -72,15 +72,16 @@ export function ChatWindow() {
 
         aiResponse = response.data.aiResponse;
         context = response.data.chunksUsed;
+        recommendations = response.data.recommendations || [];
       } else {
-        // Use Study Chat API with YouTube recommendations
+        // Use Study Chat API with recommendations (videos, books, etc.)
         const response = await createStudyChat({
           topic: selectedTopic || "General Study",
           message: userMessage.content,
         });
 
         aiResponse = response.aiResponse;
-        youtubeRecommendations = response.youtubeRecommendations;
+        recommendations = response.recommendations || [];
       }
 
       const aiMessage: Message = {
@@ -89,7 +90,7 @@ export function ChatWindow() {
         content: aiResponse,
         timestamp: new Date(),
         context,
-        youtubeRecommendations,
+        recommendations,
       };
 
       addMessage(aiMessage);
@@ -252,16 +253,16 @@ export function ChatWindow() {
                     <ContextDisplay chunksUsed={message.context} />
                   </div>
                 )}
-                {message.role === "assistant" && message.youtubeRecommendations && message.youtubeRecommendations.length > 0 && (
+                {message.role === "assistant" && message.recommendations && message.recommendations.length > 0 && (
                   <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Play className="h-4 w-4 text-primary" />
-                      Recommended Videos
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Recommended Resources
                     </h4>
-                    {message.youtubeRecommendations.map((video) => (
+                    {message.recommendations.map((recommendation, idx) => (
                       <a
-                        key={video.id}
-                        href={video.url}
+                        key={`${recommendation.type}-${idx}`}
+                        href={recommendation.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex space-x-3 p-4 rounded-xl border-2 border-border bg-card hover:border-primary hover:shadow-lg transition-all duration-200 group hover:scale-[1.02]"
@@ -269,38 +270,76 @@ export function ChatWindow() {
                         {/* Thumbnail */}
                         <div className="relative flex-shrink-0 w-40 h-24 rounded-lg overflow-hidden bg-muted shadow-md group-hover:shadow-xl transition-all">
                           <img
-                            src={video.thumbnail}
-                            alt={video.title}
+                            src={recommendation.thumbnail}
+                            alt={recommendation.title}
                             loading="lazy"
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           />
                           <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                            <div className="bg-red-600 rounded-full p-2 shadow-lg group-hover:scale-110 transition-transform">
-                              <Play className="h-4 w-4 text-white fill-white" />
+                            <div className={`rounded-full p-2 shadow-lg group-hover:scale-110 transition-transform ${
+                              recommendation.type === 'video' ? 'bg-red-600' : 'bg-blue-600'
+                            }`}>
+                              {recommendation.type === 'video' ? (
+                                <Play className="h-4 w-4 text-white fill-white" />
+                              ) : (
+                                <BookOpen className="h-4 w-4 text-white" />
+                              )}
                             </div>
                           </div>
-                          {/* Duration Badge */}
-                          <div className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-2 py-1 rounded-md font-medium backdrop-blur-sm">
-                            {formatDuration(video.duration)}
+                          {/* Duration Badge for videos */}
+                          {recommendation.type === 'video' && recommendation.duration && (
+                            <div className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-2 py-1 rounded-md font-medium backdrop-blur-sm">
+                              {recommendation.duration}
+                            </div>
+                          )}
+                          {/* Source Badge */}
+                          <div className="absolute top-2 left-2 bg-black/90 text-white text-xs px-2 py-1 rounded-md font-medium backdrop-blur-sm">
+                            {recommendation.source}
                           </div>
                         </div>
 
-                        {/* Video Info */}
+                        {/* Resource Info */}
                         <div className="flex-1 min-w-0">
                           <h5 className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-1">
-                            {video.title}
+                            {recommendation.title}
                           </h5>
-                          <p className="text-xs text-muted-foreground mb-2">{video.channelTitle}</p>
-                          <div className="flex items-center space-x-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3.5 w-3.5" />
-                              {formatViewCount(video.viewCount)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5" />
-                              {formatPublishedDate(video.publishedAt)}
-                            </span>
-                          </div>
+
+                          {/* Video metadata */}
+                          {recommendation.type === 'video' && recommendation.channelTitle && (
+                            <p className="text-xs text-muted-foreground mb-2">{recommendation.channelTitle}</p>
+                          )}
+
+                          {/* Reading metadata */}
+                          {recommendation.type === 'reading' && recommendation.authors && recommendation.authors.length > 0 && (
+                            <p className="text-xs text-muted-foreground mb-2">
+                              By {recommendation.authors.join(', ')}
+                            </p>
+                          )}
+
+                          {/* Description */}
+                          {recommendation.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                              {recommendation.description}
+                            </p>
+                          )}
+
+                          {/* Video stats */}
+                          {recommendation.type === 'video' && (recommendation.viewCount || recommendation.publishedAt) && (
+                            <div className="flex items-center space-x-3 text-xs text-muted-foreground">
+                              {recommendation.viewCount && (
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3.5 w-3.5" />
+                                  {formatViewCount(recommendation.viewCount)}
+                                </span>
+                              )}
+                              {recommendation.publishedAt && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  {formatPublishedDate(recommendation.publishedAt)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </a>
                     ))}
