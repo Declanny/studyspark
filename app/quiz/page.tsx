@@ -78,7 +78,7 @@ function QuizHubContent() {
       questions: 10,
       difficulty: "Fundamentals",
       time: "10 minutes",
-      gradient: "from-green-500 to-emerald-500",
+      image: "/Frame 84.png",
       href: "/quiz/personal"
     },
     {
@@ -87,7 +87,7 @@ function QuizHubContent() {
       questions: 10,
       difficulty: "Advanced",
       time: "20 minutes",
-      gradient: "from-orange-500 to-amber-500",
+      image: "/Frame 85.png",
       href: "/quiz/personal"
     },
     {
@@ -96,7 +96,7 @@ function QuizHubContent() {
       questions: 10,
       difficulty: "Comprehensive",
       time: "45 minutes",
-      gradient: "from-red-500 to-pink-500",
+      image: "/Frame 84 (1).png",
       href: "/quiz/personal"
     }
   ];
@@ -108,27 +108,16 @@ function QuizHubContent() {
         {/* Join Live Quiz Hero Section */}
         <div className="mb-12">
           <Card 
-            className="overflow-hidden border-0 shadow-2xl w-full flex"
+            className="overflow-hidden border-0 shadow-2xl w-full flex relative"
             style={{
               height: '350px',
               borderRadius: '32px',
-              backgroundColor: '#9654F4',
+              backgroundImage: 'url(/quizhero.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
             }}
           >
-            {/* Background Pattern */}
-            <div 
-              className="absolute inset-0 opacity-10 pointer-events-none"
-              style={{
-                backgroundImage: `repeating-linear-gradient(
-                  45deg,
-                  transparent,
-                  transparent 10px,
-                  rgba(255,255,255,0.1) 10px,
-                  rgba(255,255,255,0.1) 20px
-                )`
-              }}
-            />
-            
             <div className="relative grid md:grid-cols-2 h-full w-full">
               {/* Left Side - Content */}
               <div className="space-y-6 z-10 p-8 md:p-12 flex flex-col justify-center">
@@ -142,9 +131,8 @@ function QuizHubContent() {
                 {/* Input Field */}
                 <div className="flex gap-3">
                   <div className="relative flex-1">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-gray-400" />
-                      <Keyboard className="h-4 w-4 text-gray-400" />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center">
+                      <Keyboard className="h-5 w-5 text-gray-400" />
                     </div>
                     <Input
                       type="text"
@@ -156,7 +144,7 @@ function QuizHubContent() {
                         }
                       }}
                       placeholder="Enter Quiz Code or Link"
-                      className="pl-20 pr-4 py-6 text-base bg-white/95 border-0 rounded-xl shadow-lg focus:ring-2 focus:ring-white/50"
+                      className="pl-14 pr-4 py-6 text-base bg-white/95 border-0 rounded-xl shadow-lg focus:ring-2 focus:ring-white/50"
                     />
                   </div>
                   <Button
@@ -166,21 +154,6 @@ function QuizHubContent() {
                     Join
                   </Button>
                 </div>
-              </div>
-
-              {/* Right Side - Illustrations */}
-              <div className="relative hidden md:block h-full w-full z-10 overflow-hidden">
-                <img 
-                  src="/Frame 126.png" 
-                  alt="Quiz hero illustration" 
-                  className="absolute inset-0 h-full w-full"
-                  style={{ 
-                    height: '350px',
-                    width: '100%',
-                    objectFit: 'cover',
-                    objectPosition: 'right center'
-                  }}
-                />
               </div>
             </div>
           </Card>
@@ -201,14 +174,20 @@ function QuizHubContent() {
               {practiceQuizzes.map((quiz, index) => (
                 <Card
                   key={index}
-                  className="overflow-hidden border hover:border-primary/50 transition-colors cursor-pointer group"
+                  className="overflow-hidden border hover:border-primary/50 transition-colors cursor-pointer group flex flex-col p-0"
                   onClick={() => router.push(quiz.href)}
                 >
-                  {/* Header */}
-                  <div className={`h-16 bg-gradient-to-br ${quiz.gradient}`} />
+                  {/* Image Header - increased height, top with 0 padding */}
+                  <div className="w-full h-40 overflow-hidden flex-shrink-0">
+                    <img 
+                      src={quiz.image} 
+                      alt={quiz.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
                   {/* Content */}
-                  <div className="p-5 space-y-4">
+                  <div className="p-5 space-y-4 flex-1">
                     <div>
                       <h3 className="text-base font-semibold text-foreground mb-1">
                         {quiz.title}

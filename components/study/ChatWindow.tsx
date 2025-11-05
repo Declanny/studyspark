@@ -127,7 +127,7 @@ export function ChatWindow() {
         onClose={() => setIsMaterialSelectorOpen(false)}
       />
 
-      <Card className="flex flex-col h-[calc(100vh-16rem)] border-2 shadow-xl bg-gradient-to-br from-card to-card/95 backdrop-blur-sm">
+      <Card className="flex flex-col h-[calc(100vh-16rem)] border-2 shadow-xl">
         {/* Material Context Controls */}
         <div className="p-5 border-b bg-gradient-to-r from-muted/30 to-muted/10">
           <div className="flex items-center justify-between mb-4">

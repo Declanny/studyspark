@@ -2,12 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, Loader, Plus, Trash2, Edit2 } from 'lucide-react';
-import Link from 'next/link';
+import { Sparkles, Loader, Plus, Trash2 } from 'lucide-react';
 import { generateQuizQuestions, createPersonalQuiz, createLiveQuiz, Question } from '@/lib/quizApi';
 import { toast } from 'react-hot-toast';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Navbar } from '@/components/Navbar';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
-export default function GenerateQuizPage() {
+function GenerateQuizContent() {
   const router = useRouter();
   const [step, setStep] = useState<'settings' | 'edit'>('settings');
   const [quizType, setQuizType] = useState<'personal' | 'live'>('personal');
@@ -126,115 +133,141 @@ export default function GenerateQuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Dashboard</span>
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Generate Quiz</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mb-2">
+            Generate Quiz
+          </h1>
+          <p className="text-muted-foreground text-lg">
             Create AI-generated quizzes for your study topics
           </p>
         </div>
 
         {/* Quiz Type Selection */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quiz Type</h2>
+        <Card className="p-6 border-2 mb-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Quiz Type</h2>
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => setQuizType('personal')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                quizType === 'personal'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
+              className="p-6 rounded-lg border-2 border-border hover:border-primary/50 bg-background transition-all text-left relative overflow-hidden group"
             >
-              <h3 className="font-semibold text-gray-900 mb-1">Personal Quiz</h3>
-              <p className="text-sm text-gray-600">Take the quiz at your own pace</p>
+              {/* Overlay when selected */}
+              {quizType === 'personal' && (
+                <div className="absolute inset-0 bg-primary/10 border-primary border-2 rounded-lg" />
+              )}
+              
+              {/* Checkmark icon */}
+              <div className={`absolute top-3 right-3 z-10 transition-all ${
+                quizType === 'personal' ? 'opacity-100' : 'opacity-0'
+              }`}>
+                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                  <svg className="w-4 h-4 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              
+              <div className="relative z-10">
+                <h3 className="font-semibold text-foreground mb-1">Personal Quiz</h3>
+                <p className="text-sm text-muted-foreground">Take the quiz at your own pace</p>
+              </div>
             </button>
+            
             <button
               onClick={() => setQuizType('live')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                quizType === 'live'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
+              className="p-6 rounded-lg border-2 border-border hover:border-primary/50 bg-background transition-all text-left relative overflow-hidden group"
             >
-              <h3 className="font-semibold text-gray-900 mb-1">Live Quiz</h3>
-              <p className="text-sm text-gray-600">Compete with others in real-time</p>
+              {/* Overlay when selected */}
+              {quizType === 'live' && (
+                <div className="absolute inset-0 bg-primary/10 border-primary border-2 rounded-lg" />
+              )}
+              
+              {/* Checkmark icon */}
+              <div className={`absolute top-3 right-3 z-10 transition-all ${
+                quizType === 'live' ? 'opacity-100' : 'opacity-0'
+              }`}>
+                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                  <svg className="w-4 h-4 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              
+              <div className="relative z-10">
+                <h3 className="font-semibold text-foreground mb-1">Live Quiz</h3>
+                <p className="text-sm text-muted-foreground">Compete with others in real-time</p>
+              </div>
             </button>
           </div>
-        </div>
+        </Card>
 
         {/* Quiz Settings */}
         {step === 'settings' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Quiz Settings</h2>
+          <Card className="p-6 border-2">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Quiz Settings</h2>
 
             <div className="space-y-4">
               {/* Topic */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Label htmlFor="topic">
                   Topic <span className="text-red-500">*</span>
-                </label>
-                <input
+                </Label>
+                <Input
+                  id="topic"
                   type="text"
                   value={formData.topic}
                   onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Data Structures"
                   required
+                  className="mt-2"
                 />
               </div>
 
               {/* Subject */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Subject (Optional)
-                </label>
-                <input
+                <Label htmlFor="subject">Subject (Optional)</Label>
+                <Input
+                  id="subject"
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Computer Science"
+                  className="mt-2"
                 />
               </div>
 
               {/* Difficulty & Question Count */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Difficulty
-                  </label>
-                  <select
+                  <Label htmlFor="difficulty">Difficulty</Label>
+                  <Select
                     value={formData.difficulty}
-                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as any })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onValueChange={(value) => setFormData({ ...formData, difficulty: value as any })}
                   >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
+                    <SelectTrigger id="difficulty" className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Number of Questions
-                  </label>
-                  <input
+                  <Label htmlFor="questionCount">Number of Questions</Label>
+                  <Input
+                    id="questionCount"
                     type="number"
                     min="5"
                     max="50"
                     value={formData.questionCount}
                     onChange={(e) => setFormData({ ...formData, questionCount: parseInt(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-2"
                   />
                 </div>
               </div>
@@ -242,16 +275,15 @@ export default function GenerateQuizPage() {
               {/* Time Limit (for live quizzes) */}
               {quizType === 'live' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Time Limit (minutes, 0 = no limit)
-                  </label>
-                  <input
+                  <Label htmlFor="timeLimit">Time Limit (minutes, 0 = no limit)</Label>
+                  <Input
+                    id="timeLimit"
                     type="number"
                     min="0"
                     max="180"
                     value={formData.timeLimit}
                     onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-2"
                   />
                 </div>
               )}
@@ -263,200 +295,196 @@ export default function GenerateQuizPage() {
                   id="explanations"
                   checked={formData.includeExplanations}
                   onChange={(e) => setFormData({ ...formData, includeExplanations: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                 />
-                <label htmlFor="explanations" className="text-sm text-gray-700">
+                <Label htmlFor="explanations" className="text-sm font-normal cursor-pointer">
                   Include explanations for answers
-                </label>
+                </Label>
               </div>
             </div>
 
             {/* Different buttons for personal vs live quizzes */}
-            {quizType === 'personal' ? (
-              <button
-                onClick={handleCreateQuiz}
-                disabled={isCreating || !formData.topic.trim()}
-                className={`
-                  mt-6 w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all
-                  ${isCreating || !formData.topic.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }
-                `}
-              >
-                {isCreating ? (
-                  <>
-                    <Loader className="h-5 w-5 animate-spin" />
-                    <span>Creating Quiz with AI...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5" />
-                    <span>Create Personal Quiz</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating || !formData.topic.trim()}
-                className={`
-                  mt-6 w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all
-                  ${isGenerating || !formData.topic.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }
-                `}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader className="h-5 w-5 animate-spin" />
-                    <span>Generating Questions...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5" />
-                    <span>Generate Questions</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
+            <div className="mt-6 flex">
+              {quizType === 'personal' ? (
+                <Button
+                  onClick={handleCreateQuiz}
+                  disabled={isCreating || !formData.topic.trim()}
+                  className="border-2 border-border cursor-pointer"
+                  size="lg"
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader className="h-5 w-5 mr-2 animate-spin" />
+                      Creating Quiz with AI...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Create Personal Quiz
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !formData.topic.trim()}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader className="h-5 w-5 mr-2 animate-spin" />
+                      Generating Questions...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Generate Questions
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </Card>
         )}
 
         {/* Step 2: Edit Questions */}
         {step === 'edit' && questions.length > 0 && (
           <div className="space-y-6">
             {/* Quiz Title */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Card className="p-6 border-2">
+              <Label htmlFor="quizTitle">
                 Quiz Title <span className="text-red-500">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
+                id="quizTitle"
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., Data Structures Quiz - Week 3"
                 required
+                className="mt-2"
               />
-            </div>
+            </Card>
 
             {/* Questions */}
             {questions.map((question, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <Card key={index} className="p-6 border-2">
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Question {index + 1}</h3>
-                  <button
+                  <h3 className="text-lg font-semibold text-foreground">Question {index + 1}</h3>
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => deleteQuestion(index)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    className="hover:bg-red-50 hover:border-red-200 hover:text-red-600"
                   >
-                    <Trash2 className="h-5 w-5 text-red-600" />
-                  </button>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 <div className="space-y-4">
                   {/* Question Text */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Question
-                    </label>
-                    <textarea
+                    <Label htmlFor={`question-${index}`}>Question</Label>
+                    <Textarea
+                      id={`question-${index}`}
                       value={question.questionText}
                       onChange={(e) => updateQuestion(index, { questionText: e.target.value })}
                       rows={2}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="mt-2"
                     />
                   </div>
 
                   {/* Options */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Options
-                    </label>
-                    {question.options.map((option, optIndex) => (
-                      <div key={optIndex} className="flex items-center space-x-2 mb-2">
-                        <input
-                          type="radio"
-                          checked={question.correctAnswer === option.text}
-                          onChange={() => updateQuestion(index, { correctAnswer: option.text })}
-                          className="w-4 h-4 text-blue-600"
-                        />
-                        <input
-                          type="text"
-                          value={option.text}
-                          onChange={(e) => {
-                            const newOptions = [...question.options];
-                            newOptions[optIndex] = { text: e.target.value, isCorrect: option.isCorrect };
-                            updateQuestion(index, { options: newOptions });
-                          }}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder={`Option ${optIndex + 1}`}
-                        />
-                      </div>
-                    ))}
+                    <Label>Options</Label>
+                    <div className="mt-2 space-y-2">
+                      {question.options.map((option, optIndex) => (
+                        <div key={optIndex} className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            checked={question.correctAnswer === option.text}
+                            onChange={() => updateQuestion(index, { correctAnswer: option.text })}
+                            className="w-4 h-4 text-primary"
+                          />
+                          <Input
+                            type="text"
+                            value={option.text}
+                            onChange={(e) => {
+                              const newOptions = [...question.options];
+                              newOptions[optIndex] = { text: e.target.value, isCorrect: option.isCorrect };
+                              updateQuestion(index, { options: newOptions });
+                            }}
+                            placeholder={`Option ${optIndex + 1}`}
+                            className="flex-1"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Explanation */}
                   {formData.includeExplanations && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Explanation (Optional)
-                      </label>
-                      <textarea
+                      <Label htmlFor={`explanation-${index}`}>Explanation (Optional)</Label>
+                      <Textarea
+                        id={`explanation-${index}`}
                         value={question.explanation || ''}
                         onChange={(e) => updateQuestion(index, { explanation: e.target.value })}
                         rows={2}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="mt-2"
                         placeholder="Explain why this answer is correct..."
                       />
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
             ))}
 
             {/* Add Question Button */}
-            <button
+            <Button
               onClick={addQuestion}
-              className="w-full flex items-center justify-center space-x-2 px-6 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-all"
+              variant="outline"
+              className="w-full border-2 border-dashed"
             >
-              <Plus className="h-5 w-5" />
-              <span>Add Another Question</span>
-            </button>
+              <Plus className="h-5 w-5 mr-2" />
+              Add Another Question
+            </Button>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end space-x-4">
-              <button
+            <div className="flex items-center justify-end gap-4">
+              <Button
                 onClick={() => setStep('settings')}
-                className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                variant="outline"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateQuiz}
                 disabled={isCreating || !formData.title.trim()}
-                className={`
-                  flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all
-                  ${isCreating || !formData.title.trim()
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }
-                `}
+                size="lg"
               >
                 {isCreating ? (
                   <>
-                    <Loader className="h-5 w-5 animate-spin" />
-                    <span>Creating...</span>
+                    <Loader className="h-5 w-5 mr-2 animate-spin" />
+                    Creating...
                   </>
                 ) : (
-                  <span>Create Live Quiz</span>
+                  'Create Live Quiz'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
+  );
+}
+
+export default function GenerateQuizPage() {
+  return (
+    <ProtectedRoute>
+      <GenerateQuizContent />
+    </ProtectedRoute>
   );
 }

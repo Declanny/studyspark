@@ -29,7 +29,6 @@ export function Navbar() {
     { name: "Study", href: "/study" },
     { name: "Quiz", href: "/quiz" },
     { name: "History", href: "/careers" },
-    { name: "Recent Activities", href: "/notifications" },
   ];
 
   const handleLogout = () => {
@@ -47,19 +46,20 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-background">
-      <div className="mx-auto px-8 pt-8">
-        <div className="flex h-[65px] max-w-[1216px] mx-auto items-center justify-between">
-          {/* Logo */}
-          <Link href="/dashboard" className="flex items-center space-x-2">
+    <nav className="sticky top-0 z-50 bg-background w-full">
+      <div className="container mx-auto px-4 pt-8 max-w-[1216px]">
+        {/* Full-width navigation container with logo, links, and profile inside */}
+        <div className="hidden md:flex items-center justify-between w-full h-[65px] rounded-full border border-[#EFE6FD] bg-white px-4">
+          {/* Logo - Left side */}
+          <Link href="/dashboard" className="flex items-center space-x-2 pl-2">
             <img src="/s.png" alt="StudySpark" className="h-8 w-8" />
             <span className="font-bold text-xl">
               Study<span className="text-primary">Spark</span>
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2 h-[65px] rounded-full border border-[#EFE6FD] bg-white p-2">
+          {/* Navigation Links - Center */}
+          <div className="flex items-center gap-2">
             {navigation.map((item) => (
               <Link key={item.name} href={item.href}>
                 <button
@@ -75,7 +75,42 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* User Menu */}
+          {/* User Menu - Right side */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="relative h-12 w-12 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer border border-[#FDA7BF]">
+                <div className="h-full w-full rounded-full bg-[#FC6075] flex items-center justify-center">
+                  <span className="text-white text-sm font-semibold">
+                    {user?.name ? getInitials(user.name) : "U"}
+                  </span>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Mobile View - Separate layout */}
+        <div className="flex md:hidden items-center justify-between h-[65px]">
+          <Link href="/dashboard" className="flex items-center space-x-2">
+            <img src="/s.png" alt="StudySpark" className="h-8 w-8" />
+            <span className="font-bold text-xl">
+              Study<span className="text-primary">Spark</span>
+            </span>
+          </Link>
+
           <div className="flex items-center space-x-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -104,7 +139,7 @@ export function Navbar() {
 
             {/* Mobile Menu */}
             <Sheet>
-              <SheetTrigger asChild className="md:hidden">
+              <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-6 w-6" />
                 </Button>

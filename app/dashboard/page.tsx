@@ -5,11 +5,10 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Navbar } from "@/components/Navbar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { WidgetCard } from "@/components/dashboard/WidgetCard";
+import { Card } from "@/components/ui/card";
 import {
   BookOpen,
   Brain,
-  Bell,
-  TrendingUp,
   Trophy,
 } from "lucide-react";
 
@@ -36,24 +35,6 @@ function DashboardContent() {
       iconColor: "text-purple-600 dark:text-purple-400",
     },
     {
-      title: "Smart Reminders",
-      description: "Never miss an important deadline",
-      icon: Bell,
-      href: "/notifications",
-      bgColor: "from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20",
-      iconBg: "bg-green-200 dark:bg-green-800/50",
-      iconColor: "text-green-600 dark:text-green-400",
-    },
-    {
-      title: "Performance Reports",
-      description: "Track your progress and insights",
-      icon: TrendingUp,
-      href: "/report",
-      bgColor: "from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20",
-      iconBg: "bg-orange-200 dark:bg-orange-800/50",
-      iconColor: "text-orange-600 dark:text-orange-400",
-    },
-    {
       title: "Study Materials",
       description: "Access your course resources",
       icon: BookOpen,
@@ -67,10 +48,37 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
+      <main className="container mx-auto px-4 py-8 max-w-[1216px]">
         <DashboardHeader user={user} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        {/* CBT Practice Hero Section */}
+        <div className="mb-12 mt-8">
+          <Card 
+            className="overflow-hidden border-0 shadow-2xl w-full flex relative"
+            style={{
+              height: '350px',
+              borderRadius: '32px',
+              backgroundImage: 'url(/quizhero.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            <div className="relative grid md:grid-cols-2 h-full w-full">
+              {/* Left Side - Content */}
+              <div className="space-y-6 z-10 p-8 md:p-12 flex flex-col justify-center">
+                <h1 className="text-4xl md:text-5xl font-bold text-white">
+                  CBT Practice
+                </h1>
+                <p className="text-white/90 text-lg">
+                  Take practice quizzes and live tests
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {widgets.map((widget, index) => (
             <WidgetCard key={index} {...widget} />
           ))}

@@ -10,8 +10,6 @@ import {
   Home,
   BookOpen,
   Trophy,
-  Bell,
-  BarChart3,
   Shield,
   Menu,
 } from "lucide-react";
@@ -33,18 +31,6 @@ const NAV_ITEMS = [
     label: "Quizzes",
     href: "/quiz",
     icon: Trophy,
-    roles: ["student", "admin"],
-  },
-  {
-    label: "Notifications",
-    href: "/notifications",
-    icon: Bell,
-    roles: ["student", "admin"],
-  },
-  {
-    label: "Reports",
-    href: "/report",
-    icon: BarChart3,
     roles: ["student", "admin"],
   },
   {

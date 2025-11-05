@@ -7,7 +7,7 @@ import { ChatWindow } from "@/components/study/ChatWindow";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Sparkles, ArrowRight, Lightbulb } from "lucide-react";
+import { BookOpen, ArrowRight, Lightbulb } from "lucide-react";
 import { useStudyStore } from "@/store/useStudyStore";
 
 function StudyContent() {
@@ -26,27 +26,23 @@ function StudyContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-4 py-8 max-w-[1216px]">
+        {/* Header Section */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-primary/10">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              AI Study Assistant
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-lg ml-14">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mb-2">
+            AI Study Assistant
+          </h1>
+          <p className="text-muted-foreground text-lg">
             Ask questions, get AI-powered answers with YouTube video recommendations
           </p>
         </div>
 
         {selectedTopic ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-6">
             {/* Current Topic Header */}
-            <Card className="p-6 border-2 shadow-lg bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+            <Card className="p-6 border-2 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="p-3 rounded-xl bg-primary/10">
@@ -60,7 +56,7 @@ function StudyContent() {
                 <Button 
                   variant="outline" 
                   onClick={handleChangeTopic}
-                  className="hover:bg-accent transition-all duration-200 hover:scale-105"
+                  className="hover:bg-accent transition-all duration-200 hover:scale-105 border-2"
                 >
                   Change Topic
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -72,7 +68,7 @@ function StudyContent() {
             <ChatWindow />
           </div>
         ) : (
-          <Card className="p-12 text-center border-2 shadow-xl bg-gradient-to-br from-card via-card to-card/80 backdrop-blur-sm animate-in fade-in slide-in-from-top-4 duration-700">
+          <Card className="p-12 text-center border-2 shadow-xl">
             <div className="max-w-lg mx-auto space-y-8">
               {/* Animated Icon */}
               <div className="relative inline-block">
@@ -109,7 +105,7 @@ function StudyContent() {
                 <Button
                   onClick={handleStartChat}
                   disabled={!topicInput.trim()}
-                  className="w-full py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed border-2"
                   size="lg"
                 >
                   Start Learning
@@ -130,7 +126,7 @@ function StudyContent() {
                         setTopicInput(topic);
                         setSelectedTopic(topic);
                       }}
-                      className="hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                      className="hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md border-2"
                     >
                       {topic}
                     </Button>
