@@ -1,58 +1,145 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useStudyStore } from "@/store/useStudyStore";
+import { useState } from "react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Navbar } from "@/components/Navbar";
 import { ChatWindow } from "@/components/study/ChatWindow";
-import { TopicSelector } from "@/components/study/TopicSelector";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { BookOpen, Sparkles, ArrowRight, Lightbulb } from "lucide-react";
+import { useStudyStore } from "@/store/useStudyStore";
 
 function StudyContent() {
-  const user = useAuthStore((state) => state.user);
-  const { selectedCourse, selectedTopic, setSelectedCourse } = useStudyStore();
+  const [topicInput, setTopicInput] = useState("");
+  const { selectedTopic, setSelectedTopic } = useStudyStore();
 
-  useEffect(() => {
-    if (user?.course && !selectedCourse) {
-      setSelectedCourse(user.course);
+  const handleStartChat = () => {
+    if (topicInput.trim()) {
+      setSelectedTopic(topicInput.trim());
+      setTopicInput("");
     }
-  }, [user, selectedCourse, setSelectedCourse]);
+  };
+
+  const handleChangeTopic = () => {
+    setSelectedTopic("");
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Navbar />
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">AI Study Assistant</h1>
-          <p className="text-muted-foreground mt-2">
-            Ask questions, get summaries, and understand your course materials better
+      <main className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              AI Study Assistant
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-lg ml-14">
+            Ask questions, get AI-powered answers with YouTube video recommendations
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Topic Selector Sidebar */}
-          <div className="lg:col-span-1">
-            <TopicSelector />
-          </div>
-
-          {/* Chat Area */}
-          <div className="lg:col-span-3">
-            {selectedTopic ? (
-              <ChatWindow />
-            ) : (
-              <Card className="p-12 text-center">
-                <div className="max-w-md mx-auto space-y-4">
-                  <div className="text-6xl">🧠</div>
-                  <h2 className="text-2xl font-bold">Select a Topic to Begin</h2>
-                  <p className="text-muted-foreground">
-                    Choose a topic or week from the sidebar to start chatting with your AI study assistant
-                  </p>
+        {selectedTopic ? (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Current Topic Header */}
+            <Card className="p-6 border-2 shadow-lg bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Current Topic</p>
+                    <p className="font-semibold text-xl text-foreground">{selectedTopic}</p>
+                  </div>
                 </div>
-              </Card>
-            )}
+                <Button 
+                  variant="outline" 
+                  onClick={handleChangeTopic}
+                  className="hover:bg-accent transition-all duration-200 hover:scale-105"
+                >
+                  Change Topic
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+
+            {/* Chat Window */}
+            <ChatWindow />
           </div>
-        </div>
+        ) : (
+          <Card className="p-12 text-center border-2 shadow-xl bg-gradient-to-br from-card via-card to-card/80 backdrop-blur-sm animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="max-w-lg mx-auto space-y-8">
+              {/* Animated Icon */}
+              <div className="relative inline-block">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
+                <div className="relative text-7xl">🧠</div>
+              </div>
+              
+              <div className="space-y-3">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  What would you like to learn about?
+                </h2>
+                <p className="text-muted-foreground text-base">
+                  Enter a topic to start chatting with your AI study assistant
+                </p>
+              </div>
+
+              {/* Topic Input */}
+              <div className="space-y-4">
+                <div className="relative">
+                  <Lightbulb className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={topicInput}
+                    onChange={(e) => setTopicInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && topicInput.trim()) {
+                        handleStartChat();
+                      }
+                    }}
+                    placeholder="e.g., Data Structures, Machine Learning, Algorithms..."
+                    className="w-full pl-12 pr-4 py-6 text-base border-2 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 rounded-xl shadow-sm hover:shadow-md"
+                  />
+                </div>
+                <Button
+                  onClick={handleStartChat}
+                  disabled={!topicInput.trim()}
+                  className="w-full py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                  size="lg"
+                >
+                  Start Learning
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Quick Topic Suggestions */}
+              <div className="pt-6 border-t">
+                <p className="text-sm font-medium text-muted-foreground mb-4">Quick suggestions:</p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {["Data Structures", "Algorithms", "Machine Learning", "Web Development", "Databases"].map((topic) => (
+                    <Button
+                      key={topic}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTopicInput(topic);
+                        setSelectedTopic(topic);
+                      }}
+                      className="hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                    >
+                      {topic}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
       </main>
     </div>
   );

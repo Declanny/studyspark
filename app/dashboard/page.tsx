@@ -11,7 +11,6 @@ import {
   Bell,
   TrendingUp,
   Trophy,
-  Clock,
 } from "lucide-react";
 
 function DashboardContent() {
@@ -23,42 +22,45 @@ function DashboardContent() {
       description: "Chat with AI about your course materials",
       icon: Brain,
       href: "/study",
-      color: "bg-primary",
+      bgColor: "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20",
+      iconBg: "bg-blue-200 dark:bg-blue-800/50",
+      iconColor: "text-blue-600 dark:text-blue-400",
     },
     {
-      title: "Quiz Center",
-      description: "Create, practice, and take quizzes",
+      title: "CBT Practice",
+      description: "Take practice quizzes and live tests",
       icon: Trophy,
       href: "/quiz",
-      color: "bg-accent",
-    },
-    {
-      title: "Study Materials",
-      description: "Upload and manage your course materials",
-      icon: BookOpen,
-      href: "/materials",
-      color: "bg-chart-5",
-    },
-    {
-      title: "Analytics & Progress",
-      description: "Track your performance and get AI insights",
-      icon: TrendingUp,
-      href: "/analytics",
-      color: "bg-chart-4",
+      bgColor: "from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20",
+      iconBg: "bg-purple-200 dark:bg-purple-800/50",
+      iconColor: "text-purple-600 dark:text-purple-400",
     },
     {
       title: "Smart Reminders",
       description: "Never miss an important deadline",
       icon: Bell,
       href: "/notifications",
-      color: "bg-chart-3",
+      bgColor: "from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20",
+      iconBg: "bg-green-200 dark:bg-green-800/50",
+      iconColor: "text-green-600 dark:text-green-400",
     },
     {
-      title: "Reports & History",
-      description: "View your learning history and reports",
-      icon: Clock,
-      href: "/quiz/attempts",
-      color: "bg-chart-2",
+      title: "Performance Reports",
+      description: "Track your progress and insights",
+      icon: TrendingUp,
+      href: "/report",
+      bgColor: "from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20",
+      iconBg: "bg-orange-200 dark:bg-orange-800/50",
+      iconColor: "text-orange-600 dark:text-orange-400",
+    },
+    {
+      title: "Study Materials",
+      description: "Access your course resources",
+      icon: BookOpen,
+      href: "/study",
+      bgColor: "from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20",
+      iconBg: "bg-pink-200 dark:bg-pink-800/50",
+      iconColor: "text-pink-600 dark:text-pink-400",
     },
   ];
 
@@ -73,21 +75,6 @@ function DashboardContent() {
             <WidgetCard key={index} {...widget} />
           ))}
         </div>
-
-        {user?.role === "admin" && (
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Admin Tools</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <WidgetCard
-                title="Admin Panel"
-                description="Manage content and users"
-                icon={BookOpen}
-                href="/admin"
-                color="bg-destructive"
-              />
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

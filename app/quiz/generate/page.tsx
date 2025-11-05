@@ -9,7 +9,7 @@ import { toast } from 'react-hot-toast';
 
 export default function GenerateQuizPage() {
   const router = useRouter();
-  const [step, setStep] = useState<'generate' | 'edit' | 'create'  >('generate');
+  const [step, setStep] = useState<'settings' | 'edit'>('settings');
   const [quizType, setQuizType] = useState<'personal' | 'live'>('personal');
 
   const [formData, setFormData] = useState({
@@ -55,36 +55,42 @@ export default function GenerateQuizPage() {
   };
 
   const handleCreateQuiz = async () => {
-    if (!formData.title.trim()) {
-      toast.error('Please enter a quiz title');
-      return;
-    }
-
-    if (questions.length === 0) {
-      toast.error('Please generate questions first');
+    if (!formData.topic.trim()) {
+      toast.error('Please enter a topic');
       return;
     }
 
     setIsCreating(true);
 
     try {
-      const quizData = {
-        title: formData.title.trim(),
-        topic: formData.topic.trim(),
-        subject: formData.subject.trim() || undefined,
-        difficulty: formData.difficulty,
-        questions,
-        timeLimit: formData.timeLimit > 0 ? formData.timeLimit : undefined
-      };
-
       if (quizType === 'live') {
-        const quiz = await createLiveQuiz(quizData);
+        // Live quizzes need pre-generated questions
+        if (questions.length === 0) {
+          toast.error('Please generate questions first');
+          setIsCreating(false);
+          return;
+        }
+
+        const quiz = await createLiveQuiz({
+          title: formData.title.trim() || `${formData.topic} Quiz`,
+          topic: formData.topic.trim(),
+          subject: formData.subject.trim() || undefined,
+          difficulty: formData.difficulty,
+          questions,
+          timeLimit: formData.timeLimit > 0 ? formData.timeLimit : undefined
+        });
         toast.success('Live quiz created!');
         router.push(`/quiz/live/${quiz._id}`);
       } else {
-        const quiz = await createPersonalQuiz(quizData);
+        // Personal quizzes are generated automatically by backend
+        const quiz = await createPersonalQuiz({
+          topic: formData.topic.trim(),
+          course: formData.subject.trim() || undefined,
+          difficulty: formData.difficulty,
+          numberQuestions: formData.questionCount
+        });
         toast.success('Personal quiz created!');
-        router.push(`/quiz/personal/${quiz._id}`);
+        router.push(`/quiz/take/${quiz._id}`);
       }
     } catch (error: any) {
       console.error('Create quiz error:', error);
@@ -107,8 +113,13 @@ export default function GenerateQuizPage() {
       ...prev,
       {
         questionText: '',
-        options: ['', '', '', ''],
-        correctAnswer: 0,
+        options: [
+          { text: '', isCorrect: false },
+          { text: '', isCorrect: false },
+          { text: '', isCorrect: false },
+          { text: '', isCorrect: false }
+        ],
+        correctAnswer: '',
         explanation: ''
       }
     ]);
@@ -161,8 +172,8 @@ export default function GenerateQuizPage() {
           </div>
         </div>
 
-        {/* Step 1: Generate */}
-        {step === 'generate' && (
+        {/* Quiz Settings */}
+        {step === 'settings' && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Quiz Settings</h2>
 
@@ -260,29 +271,56 @@ export default function GenerateQuizPage() {
               </div>
             </div>
 
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || !formData.topic.trim()}
-              className={`
-                mt-6 w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all
-                ${isGenerating || !formData.topic.trim()
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                }
-              `}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader className="h-5 w-5 animate-spin" />
-                  <span>Generating Questions...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5" />
-                  <span>Generate Quiz Questions</span>
-                </>
-              )}
-            </button>
+            {/* Different buttons for personal vs live quizzes */}
+            {quizType === 'personal' ? (
+              <button
+                onClick={handleCreateQuiz}
+                disabled={isCreating || !formData.topic.trim()}
+                className={`
+                  mt-6 w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all
+                  ${isCreating || !formData.topic.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }
+                `}
+              >
+                {isCreating ? (
+                  <>
+                    <Loader className="h-5 w-5 animate-spin" />
+                    <span>Creating Quiz with AI...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5" />
+                    <span>Create Personal Quiz</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating || !formData.topic.trim()}
+                className={`
+                  mt-6 w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all
+                  ${isGenerating || !formData.topic.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }
+                `}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader className="h-5 w-5 animate-spin" />
+                    <span>Generating Questions...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5" />
+                    <span>Generate Questions</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
 
@@ -340,16 +378,16 @@ export default function GenerateQuizPage() {
                       <div key={optIndex} className="flex items-center space-x-2 mb-2">
                         <input
                           type="radio"
-                          checked={question.correctAnswer === optIndex}
-                          onChange={() => updateQuestion(index, { correctAnswer: optIndex })}
+                          checked={question.correctAnswer === option.text}
+                          onChange={() => updateQuestion(index, { correctAnswer: option.text })}
                           className="w-4 h-4 text-blue-600"
                         />
                         <input
                           type="text"
-                          value={option}
+                          value={option.text}
                           onChange={(e) => {
                             const newOptions = [...question.options];
-                            newOptions[optIndex] = e.target.value;
+                            newOptions[optIndex] = { text: e.target.value, isCorrect: option.isCorrect };
                             updateQuestion(index, { options: newOptions });
                           }}
                           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -390,7 +428,7 @@ export default function GenerateQuizPage() {
             {/* Action Buttons */}
             <div className="flex items-center justify-end space-x-4">
               <button
-                onClick={() => setStep('generate')}
+                onClick={() => setStep('settings')}
                 className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Back
@@ -412,7 +450,7 @@ export default function GenerateQuizPage() {
                     <span>Creating...</span>
                   </>
                 ) : (
-                  <span>Create {quizType === 'live' ? 'Live' : 'Personal'} Quiz</span>
+                  <span>Create Live Quiz</span>
                 )}
               </button>
             </div>

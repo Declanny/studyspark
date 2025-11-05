@@ -15,15 +15,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
-  BookOpen,
-  Brain,
-  Trophy,
-  Bell,
-  TrendingUp,
-  LayoutDashboard,
   LogOut,
   Menu,
-  Settings,
 } from "lucide-react";
 
 export function Navbar() {
@@ -32,16 +25,12 @@ export function Navbar() {
   const { user, logout } = useAuthStore();
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Study", href: "/study", icon: Brain },
-    { name: "Quiz", href: "/quiz", icon: Trophy },
-    { name: "Notifications", href: "/notifications", icon: Bell },
-    { name: "Reports", href: "/report", icon: TrendingUp },
+    { name: "Dashboard", href: "/dashboard" },
+    { name: "Study", href: "/study" },
+    { name: "Quiz", href: "/quiz" },
+    { name: "History", href: "/careers" },
+    { name: "Recent Activities", href: "/notifications" },
   ];
-
-  if (user?.role === "admin") {
-    navigation.push({ name: "Admin", href: "/admin", icon: Settings });
-  }
 
   const handleLogout = () => {
     logout();
@@ -58,46 +47,45 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+    <nav className="sticky top-0 z-50 bg-background">
+      <div className="mx-auto px-8 pt-8">
+        <div className="flex h-[65px] max-w-[1216px] mx-auto items-center justify-between">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <BookOpen className="h-6 w-6 text-primary" />
+            <img src="/s.png" alt="StudySpark" className="h-8 w-8" />
             <span className="font-bold text-xl">
-              Study<span className="text-primary">Pack</span>
+              Study<span className="text-primary">Spark</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.name} href={item.href}>
-                  <Button
-                    variant={pathname === item.href ? "default" : "ghost"}
-                    className="flex items-center space-x-2"
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </Button>
-                </Link>
-              );
-            })}
+          <div className="hidden md:flex items-center gap-2 h-[65px] rounded-full border border-[#EFE6FD] bg-white p-2">
+            {navigation.map((item) => (
+              <Link key={item.name} href={item.href}>
+                <button
+                  className={`px-4 h-[49px] rounded-[64px] text-sm font-medium transition-all whitespace-nowrap ${
+                    pathname === item.href
+                      ? "bg-[#221E28] text-white shadow-sm"
+                      : "text-foreground/70 hover:text-foreground"
+                  }`}
+                >
+                  {item.name}
+                </button>
+              </Link>
+            ))}
           </div>
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                <button className="relative h-12 w-12 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer border border-[#FDA7BF]">
+                  <div className="h-full w-full rounded-full bg-[#FC6075] flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">
                       {user?.name ? getInitials(user.name) : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
+                    </span>
+                  </div>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
@@ -122,21 +110,17 @@ export function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-64">
-                <div className="flex flex-col space-y-4 mt-8">
-                  {navigation.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link key={item.name} href={item.href}>
-                        <Button
-                          variant={pathname === item.href ? "default" : "ghost"}
-                          className="w-full justify-start"
-                        >
-                          <Icon className="mr-2 h-4 w-4" />
-                          {item.name}
-                        </Button>
-                      </Link>
-                    );
-                  })}
+                <div className="flex flex-col space-y-2 mt-8">
+                  {navigation.map((item) => (
+                    <Link key={item.name} href={item.href}>
+                      <Button
+                        variant={pathname === item.href ? "default" : "ghost"}
+                        className="w-full justify-start"
+                      >
+                        {item.name}
+                      </Button>
+                    </Link>
+                  ))}
                 </div>
               </SheetContent>
             </Sheet>

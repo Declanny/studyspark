@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, CheckCircle, XCircle, Loader } from 'lucide-react';
 import Link from 'next/link';
-import { getLiveQuiz, getPersonalQuiz, submitQuizAnswers, Quiz, Question } from '@/lib/quizApi';
+import { getQuiz, submitQuizAnswers, Quiz, Question } from '@/lib/quizApi';
 import { toast } from 'react-hot-toast';
 
 export default function TakeQuizPage() {
@@ -15,7 +15,7 @@ export default function TakeQuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Map<number, number>>(new Map());
+  const [answers, setAnswers] = useState<Map<number, string>>(new Map()); // Now stores option text
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [startTime] = useState(Date.now());
@@ -47,13 +47,8 @@ export default function TakeQuizPage() {
 
   const fetchQuiz = async () => {
     try {
-      // Try live quiz first, fall back to personal quiz
-      let data;
-      try {
-        data = await getLiveQuiz(quizId);
-      } catch {
-        data = await getPersonalQuiz(quizId);
-      }
+      // Use unified getQuiz endpoint that works for both personal and live quizzes
+      const data = await getQuiz(quizId);
       setQuiz(data);
     } catch (error: any) {
       console.error('Fetch quiz error:', error);
@@ -64,9 +59,9 @@ export default function TakeQuizPage() {
     }
   };
 
-  const handleAnswerSelect = (optionIndex: number) => {
+  const handleAnswerSelect = (optionText: string) => {
     const newAnswers = new Map(answers);
-    newAnswers.set(currentQuestionIndex, optionIndex);
+    newAnswers.set(currentQuestionIndex, optionText);
     setAnswers(newAnswers);
   };
 
@@ -96,14 +91,19 @@ export default function TakeQuizPage() {
     setIsSubmitting(true);
 
     try {
-      const submissionAnswers = Array.from(answers.entries()).map(([questionIndex, selectedOption]) => ({
-        questionIndex,
-        selectedOption
-      }));
+      const timeSpent = Math.floor((Date.now() - startTime) / 1000); // in seconds
+      const submissionAnswers = Array.from(answers.entries()).map(([questionIndex, selectedAnswer]) => {
+        const question = quiz.questions[questionIndex];
+        return {
+          questionId: question._id || `q-${questionIndex}`,
+          selectedAnswer,
+          timeSpent: 0 // Could track per-question time if needed
+        };
+      });
 
-      const attempt = await submitQuizAnswers(quizId, submissionAnswers);
+      const result = await submitQuizAnswers(quizId, submissionAnswers, timeSpent);
       toast.success('Quiz submitted successfully!');
-      router.push(`/quiz/result/${attempt._id}`);
+      router.push(`/quiz/result/${result.attemptId}`);
     } catch (error: any) {
       console.error('Submit error:', error);
       toast.error(error.response?.data?.error || 'Failed to submit quiz');
@@ -191,10 +191,10 @@ export default function TakeQuizPage() {
             {currentQuestion.options.map((option, index) => (
               <button
                 key={index}
-                onClick={() => handleAnswerSelect(index)}
+                onClick={() => handleAnswerSelect(option.text)}
                 className={`
                   w-full text-left p-4 rounded-lg border-2 transition-all
-                  ${selectedAnswer === index
+                  ${selectedAnswer === option.text
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }
@@ -203,19 +203,19 @@ export default function TakeQuizPage() {
                 <div className="flex items-center space-x-3">
                   <div className={`
                     w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0
-                    ${selectedAnswer === index
+                    ${selectedAnswer === option.text
                       ? 'border-blue-500 bg-blue-500'
                       : 'border-gray-300'
                     }
                   `}>
-                    {selectedAnswer === index && (
+                    {selectedAnswer === option.text && (
                       <CheckCircle className="h-4 w-4 text-white" />
                     )}
                   </div>
                   <span className="font-medium text-gray-700 mr-2">
                     {String.fromCharCode(65 + index)}.
                   </span>
-                  <span className="text-gray-900">{option}</span>
+                  <span className="text-gray-900">{option.text}</span>
                 </div>
               </button>
             ))}

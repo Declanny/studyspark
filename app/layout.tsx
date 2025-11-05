@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "StudySpark - AI-Powered Learning Platform",
   description: "Your personal AI study assistant with RAG-powered chat, quizzes, and analytics",
+  icons: {
+    icon: '/s.png',
+  },
 };
 
 export default function RootLayout({

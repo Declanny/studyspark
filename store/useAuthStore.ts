@@ -24,7 +24,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: "",
       refreshToken: "",
@@ -59,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem("accessToken", accessToken);
           localStorage.setItem("refreshToken", refreshToken);
         }
-        set({ accessToken, refreshToken });
+        set({ accessToken, refreshToken, isAuthenticated: true });
       },
       updateUser: (userData) =>
         set((state) => ({
@@ -68,6 +68,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
+      onRehydrateStorage: () => (state) => {
+        // After rehydration, check if we have tokens and set isAuthenticated accordingly
+        if (state && state.accessToken) {
+          state.isAuthenticated = true;
+        }
+      },
     }
   )
 );

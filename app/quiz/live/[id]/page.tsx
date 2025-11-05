@@ -311,12 +311,12 @@ export default function LiveQuizAdminPage() {
                     <p
                       key={optIndex}
                       className={`text-sm ${
-                        optIndex === question.correctAnswer
+                        option.isCorrect
                           ? 'text-green-600 font-medium'
                           : 'text-gray-600'
                       }`}
                     >
-                      {String.fromCharCode(65 + optIndex)}. {option}
+                      {String.fromCharCode(65 + optIndex)}. {option.text}
                     </p>
                   ))}
                 </div>

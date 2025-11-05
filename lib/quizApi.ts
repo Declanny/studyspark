@@ -1,10 +1,18 @@
 import { api } from './api';
 
+export interface QuestionOption {
+  text: string;
+  isCorrect: boolean;
+}
+
 export interface Question {
+  _id?: string;
   questionText: string;
-  options: string[];
-  correctAnswer: number;
+  options: QuestionOption[];
+  correctAnswer: string;
   explanation?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  points?: number;
 }
 
 export interface Quiz {
@@ -32,8 +40,8 @@ export interface QuizAttempt {
   quiz: string;
   user: string;
   answers: Array<{
-    questionIndex: number;
-    selectedOption: number;
+    questionId: string;
+    selectedAnswer: string;
     isCorrect: boolean;
   }>;
   score: number;
@@ -48,7 +56,11 @@ export interface QuizAttempt {
     performanceLevel: string;
   };
   completedAt: string;
+  submittedAt?: string;
   timeTaken?: number;
+  timeSpent?: number;
+  createdAt?: string;
+  quizData?: Quiz; // Full quiz data including questions
 }
 
 export interface GenerateQuizRequest {
@@ -114,14 +126,14 @@ export async function getLiveQuiz(quizId: string): Promise<Quiz> {
 }
 
 /**
- * Create a personal quiz
+ * Create a personal quiz with AI-generated questions
+ * Backend now generates questions automatically using Groq AI
  */
 export async function createPersonalQuiz(data: {
-  title: string;
   topic: string;
-  subject?: string;
+  course?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
-  questions: Question[];
+  numberQuestions: number;
 }): Promise<Quiz> {
   const response = await api.post('/quiz/personal/create', data);
   return response.data.quiz;
@@ -136,11 +148,22 @@ export async function getPersonalQuizzes(): Promise<Quiz[]> {
 }
 
 /**
- * Get a specific personal quiz
+ * Get a specific quiz by ID (works for both personal and live quizzes)
  */
-export async function getPersonalQuiz(quizId: string): Promise<Quiz> {
-  const response = await api.get(`/quiz/personal/${quizId}`);
+export async function getQuiz(quizId: string): Promise<Quiz> {
+  const response = await api.get(`/quiz/${quizId}`);
   return response.data.quiz;
+}
+
+/**
+ * Save quiz progress without submitting
+ */
+export async function saveQuizProgress(
+  quizId: string,
+  answers: Array<{ questionId: string; selectedAnswer: string; timeSpent?: number }>
+): Promise<{ attemptId: string }> {
+  const response = await api.post(`/quiz/${quizId}/save`, { answers });
+  return response.data;
 }
 
 /**
@@ -148,10 +171,11 @@ export async function getPersonalQuiz(quizId: string): Promise<Quiz> {
  */
 export async function submitQuizAnswers(
   quizId: string,
-  answers: Array<{ questionIndex: number; selectedOption: number }>
-): Promise<QuizAttempt> {
-  const response = await api.post(`/quiz/${quizId}/submit`, { answers });
-  return response.data.attempt;
+  answers: Array<{ questionId: string; selectedAnswer: string; timeSpent?: number }>,
+  timeSpent?: number
+): Promise<{ attemptId: string }> {
+  const response = await api.post(`/quiz/${quizId}/submit`, { answers, timeSpent });
+  return { attemptId: response.data.attemptId };
 }
 
 /**
@@ -173,7 +197,7 @@ export async function getQuizAttempts(filters?: {
  * Get quiz analysis with AI insights
  */
 export async function getQuizAnalysis(attemptId: string): Promise<QuizAttempt> {
-  const response = await api.get(`/quiz/attempt/${attemptId}/analysis`);
+  const response = await api.get(`/analytics/quiz/${attemptId}/analysis`);
   return response.data.attempt;
 }
 
