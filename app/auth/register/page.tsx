@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -58,15 +60,22 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 px-4 py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-center">
-            Join <span className="text-primary">StudySpark</span>
-          </CardTitle>
-          <CardDescription className="text-center">
-            Create your account to get started
-          </CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-md">
+        <Link href="/">
+          <Button variant="ghost" className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
+        </Link>
+        <Card className="w-full">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-3xl font-bold text-center">
+              Join <span className="text-primary">StudySpark</span>
+            </CardTitle>
+            <CardDescription className="text-center">
+              Create your account to get started
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <AuthForm
             type="register"
@@ -89,7 +98,8 @@ export default function RegisterPage() {
             </Link>
           </p>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

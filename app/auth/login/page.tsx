@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,31 +49,39 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-center">
-            Welcome to <span className="text-primary">StudySpark</span>
-          </CardTitle>
-          <CardDescription className="text-center">
-            Sign in to continue your learning journey
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AuthForm
-            type="login"
-            onSubmit={handleLogin}
-            error={error}
-            isLoading={isLoading}
-          />
+      <div className="w-full max-w-md">
+        <Link href="/">
+          <Button variant="ghost" className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
+        </Link>
+        <Card className="w-full">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-3xl font-bold text-center">
+              Welcome to <span className="text-primary">StudySpark</span>
+            </CardTitle>
+            <CardDescription className="text-center">
+              Sign in to continue your learning journey
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AuthForm
+              type="login"
+              onSubmit={handleLogin}
+              error={error}
+              isLoading={isLoading}
+            />
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-primary hover:underline font-medium">
-              Register here
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Don&apos;t have an account?{" "}
+              <Link href="/auth/register" className="text-primary hover:underline font-medium">
+                Register here
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
