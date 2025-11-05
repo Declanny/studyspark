@@ -36,9 +36,19 @@ function HistoryContent() {
     setLoading(true);
     try {
       const data = await getQuizAttempts({ limit: 50 });
-      setAttempts(data);
-      if (data.length > 0) {
-        await fetchAttemptDetails(data[0]._id);
+      // Calculate percentage for each attempt if missing
+      const processedData = data.map(attempt => {
+        if (attempt.percentage === undefined && attempt.totalQuestions > 0) {
+          return {
+            ...attempt,
+            percentage: (attempt.correctAnswers / attempt.totalQuestions) * 100
+          };
+        }
+        return attempt;
+      });
+      setAttempts(processedData);
+      if (processedData.length > 0) {
+        await fetchAttemptDetails(processedData[0]._id);
       }
     } catch (error: any) {
       console.error('Fetch attempts error:', error);
@@ -51,7 +61,75 @@ function HistoryContent() {
   const fetchAttemptDetails = async (attemptId: string) => {
     setLoadingDetail(true);
     try {
-      const attempt = await getQuizAnalysis(attemptId);
+      console.log('=== Fetching attempt details for:', attemptId);
+
+      // Start with the cached attempt from our list (which already has full data from getQuizAttempts)
+      let attempt = attempts.find(a => a._id === attemptId);
+
+      if (!attempt) {
+        console.log('Attempt not found in cache, fetching fresh...');
+        const freshAttempts = await getQuizAttempts({ limit: 100 });
+        attempt = freshAttempts.find(a => a._id === attemptId);
+
+        if (!attempt) {
+          console.error('Attempt not found even after fresh fetch');
+          toast.error('Could not find quiz attempt');
+          return;
+        }
+      }
+
+      console.log('Base attempt data:', {
+        id: attempt._id,
+        hasQuizData: !!attempt.quizData,
+        hasQuestions: !!attempt.quizData?.questions,
+        questionCount: attempt.quizData?.questions?.length,
+        hasAnswers: !!attempt.answers,
+        answerCount: attempt.answers?.length
+      });
+
+      // Calculate percentage if missing
+      if (attempt.percentage === undefined && attempt.totalQuestions > 0) {
+        attempt.percentage = (attempt.correctAnswers / attempt.totalQuestions) * 100;
+      }
+
+      // Try to enrich with AI analysis from analytics endpoint
+      try {
+        console.log('Attempting to fetch AI analysis...');
+        const analysisData = await getQuizAnalysis(attemptId);
+
+        // If we got AI analysis, merge it with our base attempt
+        if (analysisData.aiAnalysis) {
+          console.log('Got AI analysis, merging...');
+          attempt = {
+            ...attempt,
+            aiAnalysis: analysisData.aiAnalysis
+          };
+        }
+
+        // If analytics endpoint has better data, use it
+        if (analysisData.quizData?.questions && analysisData.quizData.questions.length > 0) {
+          console.log('Analytics has better quizData, using it');
+          attempt.quizData = analysisData.quizData;
+        }
+
+        if (analysisData.answers && analysisData.answers.length > 0) {
+          console.log('Analytics has better answers, using them');
+          attempt.answers = analysisData.answers;
+        }
+      } catch (analysisError) {
+        console.log('Could not fetch AI analysis (using base data only):', analysisError);
+        // This is OK - we still have the base attempt data
+      }
+
+      console.log('Final attempt data:', {
+        hasQuizData: !!attempt.quizData,
+        hasQuestions: !!attempt.quizData?.questions,
+        questionCount: attempt.quizData?.questions?.length,
+        hasAnswers: !!attempt.answers,
+        answerCount: attempt.answers?.length,
+        hasAiAnalysis: !!attempt.aiAnalysis
+      });
+
       setSelectedAttempt(attempt);
     } catch (error: any) {
       console.error('Fetch attempt details error:', error);
@@ -262,10 +340,10 @@ function HistoryContent() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className={`px-2 py-1 rounded-md text-xs font-medium ${getScoreColor(attempt.percentage)}`}>
-                            {attempt.percentage.toFixed(1)}%
+                          <span className={`px-2 py-1 rounded-md text-xs font-medium ${getScoreColor(attempt.percentage ?? 0)}`}>
+                            {(attempt.percentage ?? 0).toFixed(1)}%
                           </span>
-                          {getScoreIcon(attempt.percentage)}
+                          {getScoreIcon(attempt.percentage ?? 0)}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{attempt.correctAnswers}/{attempt.totalQuestions}</span>
@@ -302,9 +380,9 @@ function HistoryContent() {
                   {/* Score Header */}
                   <div className="text-center pb-6 border-b">
                     <div className="flex items-center justify-center gap-2 mb-4">
-                      {getScoreIcon(selectedAttempt.percentage)}
-                      <span className={`text-5xl font-bold ${getScoreColor(selectedAttempt.percentage).split(' ')[0]}`}>
-                        {selectedAttempt.percentage.toFixed(1)}%
+                      {getScoreIcon(selectedAttempt.percentage ?? 0)}
+                      <span className={`text-5xl font-bold ${getScoreColor(selectedAttempt.percentage ?? 0).split(' ')[0]}`}>
+                        {(selectedAttempt.percentage ?? 0).toFixed(1)}%
                       </span>
                     </div>
                     <p className="text-muted-foreground">
@@ -418,16 +496,132 @@ function HistoryContent() {
                     </div>
                   )}
 
-                  {/* View Full Details Button */}
-                  <div className="pt-4 border-t">
-                    <Button
-                      className="w-full"
-                      onClick={() => window.location.href = `/quiz/result/${selectedAttempt._id}`}
-                    >
-                      View Full Details
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                  {/* Question-by-Question Review */}
+                  {selectedAttempt.quizData && selectedAttempt.quizData.questions && selectedAttempt.quizData.questions.length > 0 && (
+                    <div className="space-y-4 pt-4 border-t">
+                      <h3 className="text-lg font-semibold text-foreground mb-3">Question Review</h3>
+
+                      <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2">
+                        {selectedAttempt.quizData.questions.map((question, index) => {
+                          const questionId = question._id || `q-${index}`;
+                          const userAnswer = selectedAttempt.answers?.find(a => a.questionId === questionId);
+                          const isCorrect = userAnswer?.isCorrect || false;
+                          const selectedAnswer = userAnswer?.selectedAnswer || '';
+
+                          return (
+                            <div
+                              key={questionId}
+                              className={`border-2 rounded-lg p-4 ${
+                                isCorrect
+                                  ? 'border-green-200 bg-green-50/30 dark:bg-green-900/10'
+                                  : 'border-red-200 bg-red-50/30 dark:bg-red-900/10'
+                              }`}
+                            >
+                              {/* Question Header */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  {isCorrect ? (
+                                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                  ) : (
+                                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                  )}
+                                  <span className={`text-sm font-semibold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                                    Question {index + 1}
+                                  </span>
+                                </div>
+                                {question.difficulty && (
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    question.difficulty === 'easy'
+                                      ? 'bg-green-100 text-green-700'
+                                      : question.difficulty === 'medium'
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Question Text */}
+                              <p className="text-sm font-medium text-foreground mb-3">{question.questionText}</p>
+
+                              {/* Options */}
+                              <div className="space-y-2 mb-3">
+                                {question.options.map((option, optIndex) => {
+                                  const isUserSelection = option.text === selectedAnswer;
+                                  const isCorrectOption = option.isCorrect;
+
+                                  return (
+                                    <div
+                                      key={optIndex}
+                                      className={`p-3 rounded-lg border text-sm ${
+                                        isCorrectOption
+                                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                          : isUserSelection && !isCorrect
+                                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                          : 'border-gray-200 bg-white dark:bg-gray-800'
+                                      }`}
+                                    >
+                                      <div className="flex items-start gap-2">
+                                        {/* Icon */}
+                                        <div className="flex-shrink-0 mt-0.5">
+                                          {isCorrectOption ? (
+                                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                          ) : isUserSelection && !isCorrect ? (
+                                            <XCircle className="w-4 h-4 text-red-600" />
+                                          ) : (
+                                            <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                                          )}
+                                        </div>
+
+                                        {/* Option Letter */}
+                                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                          {String.fromCharCode(65 + optIndex)}.
+                                        </span>
+
+                                        {/* Option Text */}
+                                        <div className="flex-1">
+                                          <p className={`${
+                                            isCorrectOption
+                                              ? 'text-green-900 dark:text-green-100 font-medium'
+                                              : isUserSelection && !isCorrect
+                                              ? 'text-red-900 dark:text-red-100'
+                                              : 'text-gray-900 dark:text-gray-100'
+                                          }`}>
+                                            {option.text}
+                                          </p>
+                                          {isCorrectOption && (
+                                            <span className="text-xs text-green-700 dark:text-green-300 font-medium">
+                                              ✓ Correct Answer
+                                            </span>
+                                          )}
+                                          {isUserSelection && !isCorrect && (
+                                            <span className="text-xs text-red-700 dark:text-red-300 font-medium">
+                                              ✗ Your Answer
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Explanation */}
+                              {question.explanation && (
+                                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-1">💡 Explanation</p>
+                                  <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+                                    {question.explanation}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             ) : (

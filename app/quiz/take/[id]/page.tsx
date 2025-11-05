@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, CheckCircle, XCircle, Loader } from 'lucide-react';
 import Link from 'next/link';
@@ -19,6 +19,76 @@ export default function TakeQuizPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [startTime] = useState(Date.now());
+
+  const fetchQuiz = async () => {
+    try {
+      // Use unified getQuiz endpoint that works for both personal and live quizzes
+      const data = await getQuiz(quizId);
+      setQuiz(data);
+    } catch (error: any) {
+      console.error('Fetch quiz error:', error);
+      toast.error('Failed to load quiz');
+      router.push('/dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = useCallback(async () => {
+    if (!quiz) return;
+
+    // Check if all questions are answered
+    const unanswered = quiz.questions.length - answers.size;
+    if (unanswered > 0) {
+      if (typeof window !== 'undefined' && !confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const timeSpent = Math.floor((Date.now() - startTime) / 1000); // in seconds
+      const submissionAnswers = Array.from(answers.entries()).map(([questionIndex, selectedAnswer]) => {
+        const question = quiz.questions[questionIndex];
+        return {
+          questionId: question._id || `q-${questionIndex}`,
+          selectedAnswer,
+          timeSpent: 0 // Could track per-question time if needed
+        };
+      });
+
+      const result = await submitQuizAnswers(quizId, submissionAnswers, timeSpent);
+      console.log('Quiz submission result:', result);
+
+      // Store the full submission response along with quiz metadata for the result page
+      if (typeof window !== 'undefined') {
+        const resultData = {
+          ...result,
+          quizTitle: quiz.title,
+          quizTopic: quiz.topic,
+          quizDifficulty: quiz.difficulty,
+          timeSpent
+        };
+        const storageKey = `quiz-result-${result.attemptId}`;
+        console.log('Storing result in sessionStorage with key:', storageKey);
+        console.log('Result data to store:', resultData);
+        sessionStorage.setItem(storageKey, JSON.stringify(resultData));
+        // Verify it was stored
+        const verification = sessionStorage.getItem(storageKey);
+        console.log('Verification - data was stored:', !!verification);
+      }
+
+      toast.success('Quiz submitted successfully!');
+      console.log('Navigating to result page with attemptId:', result.attemptId);
+      router.push(`/quiz/result/${result.attemptId}`);
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      toast.error(error.response?.data?.error || 'Failed to submit quiz');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [quiz, answers, quizId, startTime, router]);
 
   useEffect(() => {
     fetchQuiz();
@@ -43,21 +113,7 @@ export default function TakeQuizPage() {
 
       return () => clearInterval(timer);
     }
-  }, [quiz, timeRemaining]);
-
-  const fetchQuiz = async () => {
-    try {
-      // Use unified getQuiz endpoint that works for both personal and live quizzes
-      const data = await getQuiz(quizId);
-      setQuiz(data);
-    } catch (error: any) {
-      console.error('Fetch quiz error:', error);
-      toast.error('Failed to load quiz');
-      router.push('/dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [quiz, timeRemaining, handleSubmit]);
 
   const handleAnswerSelect = (optionText: string) => {
     const newAnswers = new Map(answers);
@@ -74,41 +130,6 @@ export default function TakeQuizPage() {
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!quiz) return;
-
-    // Check if all questions are answered
-    const unanswered = quiz.questions.length - answers.size;
-    if (unanswered > 0) {
-      if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
-        return;
-      }
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const timeSpent = Math.floor((Date.now() - startTime) / 1000); // in seconds
-      const submissionAnswers = Array.from(answers.entries()).map(([questionIndex, selectedAnswer]) => {
-        const question = quiz.questions[questionIndex];
-        return {
-          questionId: question._id || `q-${questionIndex}`,
-          selectedAnswer,
-          timeSpent: 0 // Could track per-question time if needed
-        };
-      });
-
-      const result = await submitQuizAnswers(quizId, submissionAnswers, timeSpent);
-      toast.success('Quiz submitted successfully!');
-      router.push(`/quiz/result/${result.attemptId}`);
-    } catch (error: any) {
-      console.error('Submit error:', error);
-      toast.error(error.response?.data?.error || 'Failed to submit quiz');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

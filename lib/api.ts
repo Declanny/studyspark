@@ -78,8 +78,9 @@ api.interceptors.response.use(
 
     try {
       // Refresh the token
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.studyspark.dev/api/v1";
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+        `${apiUrl}/auth/refresh`,
         { refreshToken }
       );
 

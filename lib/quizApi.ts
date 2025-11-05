@@ -166,6 +166,26 @@ export async function saveQuizProgress(
   return response.data;
 }
 
+export interface SubmitQuizResponse {
+  attemptId: string;
+  results?: {
+    score: number;
+    correctAnswers: number;
+    incorrectAnswers: number;
+    skippedQuestions: number;
+    percentage: string;
+  };
+  answers?: Array<{
+    questionId: string;
+    questionText: string;
+    selectedAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+    explanation?: string;
+    options: QuestionOption[];
+  }>;
+}
+
 /**
  * Submit quiz answers
  */
@@ -173,9 +193,13 @@ export async function submitQuizAnswers(
   quizId: string,
   answers: Array<{ questionId: string; selectedAnswer: string; timeSpent?: number }>,
   timeSpent?: number
-): Promise<{ attemptId: string }> {
+): Promise<SubmitQuizResponse> {
   const response = await api.post(`/quiz/${quizId}/submit`, { answers, timeSpent });
-  return { attemptId: response.data.attemptId };
+  return {
+    attemptId: response.data.attemptId,
+    results: response.data.results,
+    answers: response.data.answers
+  };
 }
 
 /**
@@ -198,7 +222,13 @@ export async function getQuizAttempts(filters?: {
  */
 export async function getQuizAnalysis(attemptId: string): Promise<QuizAttempt> {
   const response = await api.get(`/analytics/quiz/${attemptId}/analysis`);
-  return response.data.attempt;
+  console.log('Raw API response:', response.data);
+
+  // Handle both response formats
+  const attemptData = response.data.attempt || response.data;
+  console.log('Extracted attempt data:', attemptData);
+
+  return attemptData;
 }
 
 /**

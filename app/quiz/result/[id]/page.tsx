@@ -19,21 +19,123 @@ export default function QuizResultPage() {
   const [filter, setFilter] = useState<FilterType>('all');
 
   useEffect(() => {
-    fetchResult();
-  }, [attemptId]);
+    if (attemptId) {
+      fetchResult();
+    }
+  }, []);
 
   const fetchResult = async () => {
     try {
       console.log('Fetching quiz analysis for attemptId:', attemptId);
-      const data = await getQuizAnalysis(attemptId);
-      console.log('Quiz analysis data received:', data);
-      console.log('Quiz data:', data.quizData);
-      console.log('Answers:', data.answers);
-      setAttempt(data);
+
+      // First, check if we have the submission data in sessionStorage
+      let submissionData = null;
+      if (typeof window !== 'undefined') {
+        const storageKey = `quiz-result-${attemptId}`;
+        console.log('Looking for sessionStorage key:', storageKey);
+        const cached = sessionStorage.getItem(storageKey);
+        console.log('SessionStorage raw value:', cached);
+        if (cached) {
+          try {
+            submissionData = JSON.parse(cached);
+            console.log('Found cached submission data:', submissionData);
+          } catch (parseError) {
+            console.error('Failed to parse cached data:', parseError);
+          }
+        } else {
+          console.log('No cached data found in sessionStorage');
+          // List all keys for debugging
+          console.log('All sessionStorage keys:', Object.keys(sessionStorage));
+        }
+      }
+
+      // If we have submission data with answers, use it to construct the attempt object
+      if (submissionData?.answers && submissionData.results) {
+        const percentage = parseFloat(submissionData.results.percentage);
+
+        // Convert submission data to attempt format
+        const attemptData: QuizAttempt = {
+          _id: attemptId,
+          quiz: '', // We'll get this from the questions
+          user: '',
+          answers: submissionData.answers.map((ans: any) => ({
+            questionId: ans.questionId,
+            selectedAnswer: ans.selectedAnswer,
+            isCorrect: ans.isCorrect
+          })),
+          score: submissionData.results.score,
+          percentage: percentage,
+          totalQuestions: submissionData.results.correctAnswers + submissionData.results.incorrectAnswers,
+          correctAnswers: submissionData.results.correctAnswers,
+          completedAt: new Date().toISOString(),
+          timeTaken: submissionData.timeSpent,
+          timeSpent: submissionData.timeSpent,
+          // Create quizData from the answers array
+          quizData: {
+            _id: '',
+            title: submissionData.quizTitle || 'Quiz Results',
+            type: 'personal' as const,
+            code: '',
+            topic: submissionData.quizTopic || '',
+            subject: '',
+            difficulty: submissionData.quizDifficulty || 'medium' as const,
+            isLive: false,
+            questions: submissionData.answers.map((ans: any) => ({
+              _id: ans.questionId,
+              questionText: ans.questionText,
+              options: ans.options,
+              correctAnswer: ans.correctAnswer,
+              explanation: ans.explanation,
+              difficulty: 'medium' as const,
+              points: 1
+            })),
+            timeLimit: 0,
+            createdBy: '',
+            createdAt: new Date().toISOString()
+          }
+        };
+
+        console.log('Constructed attempt from submission data:', attemptData);
+        setAttempt(attemptData);
+
+        // Don't clean up sessionStorage immediately - keep it for page refreshes
+        // It will be cleaned up on next navigation or manually later
+      } else {
+        // Fall back to API call
+        try {
+          const data = await getQuizAnalysis(attemptId);
+          console.log('Quiz analysis data received:', data);
+          console.log('Quiz data:', data.quizData);
+          console.log('Answers:', data.answers);
+          console.log('Has quizData:', !!data.quizData);
+          console.log('Has percentage:', data.percentage);
+
+          // Check if we got a malformed response from backend
+          if (!data._id || (!data.quizData && !data.answers)) {
+            console.error('Backend returned incomplete data structure:', data);
+            toast.error('Quiz results are not yet available. The quiz was submitted successfully. Please check the History page in a few moments.');
+            // Redirect to history page after short delay
+            setTimeout(() => router.push('/careers'), 3000);
+            return;
+          }
+
+          // Calculate percentage if missing
+          if (data.percentage === undefined && data.totalQuestions > 0) {
+            data.percentage = (data.correctAnswers / data.totalQuestions) * 100;
+          }
+
+          setAttempt(data);
+        } catch (apiError) {
+          console.error('API call failed:', apiError);
+          // If API fails, don't crash - just show what we have
+          toast.error('Could not load detailed results. Please check history page.');
+          // Redirect after delay
+          setTimeout(() => router.push('/careers'), 3000);
+        }
+      }
     } catch (error) {
       console.error('Fetch result error:', error);
       toast.error('Failed to load quiz result');
-      router.push('/dashboard');
     } finally {
       setLoading(false);
     }
@@ -53,9 +155,21 @@ export default function QuizResultPage() {
   if (!attempt || !attempt.quizData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Result not found</p>
-          <Link href="/dashboard" className="text-blue-600 hover:underline mt-2 inline-block">
+        <div className="text-center max-w-md mx-auto p-6">
+          <p className="text-gray-900 font-semibold mb-2">Result not found</p>
+          <p className="text-gray-600 text-sm mb-4">
+            {!attempt ? 'Quiz attempt not found.' : 'Quiz data is missing from the attempt.'}
+          </p>
+          {attempt && (
+            <div className="bg-gray-100 p-4 rounded text-left text-xs mb-4">
+              <p className="font-mono">Debug Info:</p>
+              <p>Attempt ID: {attempt._id || 'N/A'}</p>
+              <p>Has quizData: {attempt.quizData ? 'Yes' : 'No'}</p>
+              <p>Has answers: {attempt.answers ? `Yes (${attempt.answers.length})` : 'No'}</p>
+              <p>Score: {attempt.correctAnswers}/{attempt.totalQuestions}</p>
+            </div>
+          )}
+          <Link href="/dashboard" className="text-blue-600 hover:underline inline-block">
             Back to Dashboard
           </Link>
         </div>
@@ -113,8 +227,9 @@ export default function QuizResultPage() {
     return true; // 'all'
   });
 
+  const percentage = attempt.percentage ?? 0;
   const circumference = 2 * Math.PI * 54;
-  const progressOffset = circumference - (attempt.percentage / 100) * circumference;
+  const progressOffset = circumference - (percentage / 100) * circumference;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -133,7 +248,7 @@ export default function QuizResultPage() {
         </div>
 
         {/* Score Card with Circular Progress */}
-        <div className={`bg-white rounded-lg shadow-lg border-2 p-8 mb-6 ${getPerformanceBorder(attempt.percentage)}`}>
+        <div className={`bg-white rounded-lg shadow-lg border-2 p-8 mb-6 ${getPerformanceBorder(percentage)}`}>
           <div className="text-center">
             {/* Circular Progress Indicator */}
             <div className="relative inline-flex items-center justify-center mb-4">
@@ -160,26 +275,26 @@ export default function QuizResultPage() {
                   strokeDashoffset={progressOffset}
                   strokeLinecap="round"
                   className={
-                    attempt.percentage >= 80
+                    percentage >= 80
                       ? 'text-green-500'
-                      : attempt.percentage >= 60
+                      : percentage >= 60
                       ? 'text-yellow-500'
                       : 'text-red-500'
                   }
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className={`text-3xl font-bold ${getPerformanceColor(attempt.percentage)}`}>
-                  {attempt.percentage.toFixed(0)}%
+                <div className={`text-3xl font-bold ${getPerformanceColor(percentage)}`}>
+                  {percentage.toFixed(0)}%
                 </div>
-                <div className={`text-xl font-semibold ${getPerformanceColor(attempt.percentage)}`}>
-                  {getGrade(attempt.percentage)}
+                <div className={`text-xl font-semibold ${getPerformanceColor(percentage)}`}>
+                  {getGrade(percentage)}
                 </div>
               </div>
             </div>
 
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {attempt.percentage >= 80 ? 'Excellent Work!' : attempt.percentage >= 60 ? 'Good Job!' : 'Keep Practicing!'}
+              {percentage >= 80 ? 'Excellent Work!' : percentage >= 60 ? 'Good Job!' : 'Keep Practicing!'}
             </h2>
             <p className="text-gray-600">
               You scored {attempt.correctAnswers} out of {attempt.totalQuestions} questions correctly
@@ -209,7 +324,7 @@ export default function QuizResultPage() {
               <Target className="h-6 w-6 text-green-600" />
               <h3 className="font-semibold text-gray-900">Accuracy</h3>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{attempt.percentage.toFixed(1)}%</p>
+            <p className="text-3xl font-bold text-gray-900">{percentage.toFixed(1)}%</p>
             <p className="text-sm text-gray-600">correct answers</p>
           </div>
 
